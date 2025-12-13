@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "My API",
+    "version": "1.0.0",
+    "description": "API generated from Glossify annotations"
+  },
+  "paths": {
+    "/users": {
+      "get": {
+        "summary": "Get all users from the database",
+        "tags": [
+          "UserController"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "[{ \"id\": 1, \"name\": \"John\" }, { \"id\": 2, \"name\": \"Jane\" }]"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new user",
+        "tags": [
+          "UserController"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": "{ \"id\": 3, \"name\": \"New User\", \"message\": \"User created successfully\" }"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": "{ \"name\": \"string\", \"email\": \"string\", \"password\": \"string\" }"
+            }
+          }
+        }
+      }
+    },
+    "/users/:id": {
+      "get": {
+        "summary": "Get a specific user by ID",
+        "tags": [
+          "UserController"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The user's unique identifier",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ \"id\": 1, \"name\": \"John\", \"email\": \"john@example.com\" }"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update an existing user",
+        "tags": [
+          "UserController"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The user's unique identifier",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ \"message\": \"User updated successfully\" }"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "example": "{ \"name\": \"string\", \"email\": \"string\" }"
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete a user",
+        "tags": [
+          "UserController"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The user's unique identifier",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "null"
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "summary": "List all products",
+        "tags": [
+          "ProductController"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "path",
+            "description": "Number of items to return",
+            "required": true
+          },
+          {
+            "name": "offset",
+            "in": "path",
+            "description": "Pagination offset",
+            "required": true
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Number of items to return",
+            "required": false
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Pagination offset",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ \"products\": [], \"total\": 0 }"
+          }
+        }
+      }
+    },
+    "/products/:id": {
+      "get": {
+        "summary": "Get product details",
+        "tags": [
+          "ProductController"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "{ \"id\": 1, \"name\": \"Widget\", \"price\": 9.99 }"
+          }
+        }
+      }
+    }
+  }
+}

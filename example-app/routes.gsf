@@ -1,0 +1,76 @@
+// User Management API Routes
+// Using Glossify annotations to define API structure
+
+@controller UserController {
+  
+  @route GET /users {
+    @description { Get all users from the database }
+    @response 200 {
+      [{ "id": 1, "name": "John" }, { "id": 2, "name": "Jane" }]
+    }
+  }
+
+  @route GET /users/:id {
+    @description { Get a specific user by ID }
+    @param id { The user's unique identifier }
+    @response 200 {
+      { "id": 1, "name": "John", "email": "john@example.com" }
+    }
+    @response 404 {
+      { "error": "User not found" }
+    }
+  }
+
+  @route POST /users {
+    @description { Create a new user }
+    @body {
+      { "name": "string", "email": "string", "password": "string" }
+    }
+    @response 201 {
+      { "id": 3, "name": "New User", "message": "User created successfully" }
+    }
+  }
+
+  @route PUT /users/:id {
+    @description { Update an existing user }
+    @param id { The user's unique identifier }
+    @body {
+      { "name": "string", "email": "string" }
+    }
+    @response 200 {
+      { "message": "User updated successfully" }
+    }
+  }
+
+  @route DELETE /users/:id {
+    @description { Delete a user }
+    @param id { The user's unique identifier }
+    @response 204 {
+      null
+    }
+  }
+
+}
+
+@controller ProductController {
+
+  @route GET /products {
+    @description { List all products }
+    @query {
+      @param limit { Number of items to return }
+      @param offset { Pagination offset }
+    }
+    @response 200 {
+      { "products": [], "total": 0 }
+    }
+  }
+
+  @route GET /products/:id {
+    @description { Get product details }
+    @response 200 {
+      { "id": 1, "name": "Widget", "price": 9.99 }
+    }
+  }
+
+}
+

@@ -1,0 +1,29 @@
+{
+  "name": "glossify",
+  "version": "1.0.2",
+  "description": "A powerful annotation parser and API framework for Node.js",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "annotations",
+    "parser",
+    "decorators",
+    "glossify",
+    "api",
+    "routes",
+    "openapi",
+    "documentation"
+  ],
+  "author": "Asha Somayajula",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}
