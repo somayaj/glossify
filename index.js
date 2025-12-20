@@ -437,6 +437,372 @@ class APIDocGenerator {
   }
 
   /**
+   * Generate OpenAPI YAML string
+   * @returns {string} YAML string
+   */
+  toOpenAPIYaml() {
+    const spec = this._buildEnhancedOpenAPI();
+    return this._toYaml(spec);
+  }
+
+  /**
+   * Build enhanced OpenAPI spec with proper schemas
+   * @private
+   */
+  _buildEnhancedOpenAPI() {
+    const spec = {
+      openapi: '3.0.3',
+      info: {
+        title: this.options.title,
+        version: this.options.version,
+        description: this.options.description || 'API generated from Glossify annotations'
+      },
+      servers: [
+        { url: 'http://localhost:3000', description: 'Local development server' }
+      ],
+      tags: this.controllers.map(c => ({ name: c.name, description: `${c.name} operations` })),
+      paths: {},
+      components: {
+        schemas: {}
+      }
+    };
+
+    for (const controller of this.controllers) {
+      for (const route of controller.routes) {
+        // Convert :param to {param} for OpenAPI
+        const pathKey = route.path.replace(/:(\w+)/g, '{$1}');
+
+        if (!spec.paths[pathKey]) {
+          spec.paths[pathKey] = {};
+        }
+
+        const operation = {
+          tags: [controller.name],
+          summary: route.description,
+          operationId: this._generateOperationId(route.method, route.path),
+          parameters: route.params.map(p => ({
+            name: p.name,
+            in: p.in,
+            description: p.description,
+            required: p.in === 'path',
+            schema: { type: 'string' }
+          })),
+          responses: {}
+        };
+
+        // Build responses with proper content
+        for (const res of route.responses) {
+          operation.responses[res.status] = {
+            description: this._getStatusDescription(res.status)
+          };
+          
+          if (res.example && res.example !== 'null') {
+            try {
+              const parsed = JSON.parse(res.example);
+              operation.responses[res.status].content = {
+                'application/json': {
+                  schema: this._inferSchema(parsed),
+                  example: parsed
+                }
+              };
+            } catch {
+              operation.responses[res.status].content = {
+                'application/json': {
+                  example: res.example
+                }
+              };
+            }
+          }
+        }
+
+        // Add request body if present
+        if (route.body) {
+          try {
+            const bodySchema = JSON.parse(route.body);
+            operation.requestBody = {
+              required: true,
+              content: {
+                'application/json': {
+                  schema: this._inferSchema(bodySchema),
+                  example: bodySchema
+                }
+              }
+            };
+          } catch {
+            operation.requestBody = {
+              required: true,
+              content: {
+                'application/json': {
+                  example: route.body
+                }
+              }
+            };
+          }
+        }
+
+        spec.paths[pathKey][route.method.toLowerCase()] = operation;
+      }
+    }
+
+    return spec;
+  }
+
+  /**
+   * Generate operation ID from method and path
+   * @private
+   */
+  _generateOperationId(method, path) {
+    const parts = path.split('/').filter(p => p && !p.startsWith(':'));
+    const resource = parts[parts.length - 1] || 'root';
+    const methodMap = {
+      GET: path.includes(':') ? 'get' : 'list',
+      POST: 'create',
+      PUT: 'update',
+      PATCH: 'patch',
+      DELETE: 'delete'
+    };
+    const action = methodMap[method] || method.toLowerCase();
+    return `${action}${resource.charAt(0).toUpperCase() + resource.slice(1)}`;
+  }
+
+  /**
+   * Get status description
+   * @private
+   */
+  _getStatusDescription(status) {
+    const descriptions = {
+      200: 'Successful response',
+      201: 'Resource created successfully',
+      204: 'No content',
+      400: 'Bad request',
+      401: 'Unauthorized',
+      403: 'Forbidden',
+      404: 'Resource not found',
+      500: 'Internal server error'
+    };
+    return descriptions[status] || `Response ${status}`;
+  }
+
+  /**
+   * Infer JSON schema from value
+   * @private
+   */
+  _inferSchema(value) {
+    if (value === null) return { type: 'null' };
+    if (Array.isArray(value)) {
+      return {
+        type: 'array',
+        items: value.length > 0 ? this._inferSchema(value[0]) : {}
+      };
+    }
+    if (typeof value === 'object') {
+      const properties = {};
+      for (const [key, val] of Object.entries(value)) {
+        properties[key] = this._inferSchema(val);
+      }
+      return { type: 'object', properties };
+    }
+    if (typeof value === 'number') {
+      return Number.isInteger(value) ? { type: 'integer' } : { type: 'number' };
+    }
+    if (typeof value === 'boolean') return { type: 'boolean' };
+    return { type: 'string' };
+  }
+
+  /**
+   * Convert object to YAML string
+   * @private
+   */
+  _toYaml(obj, indent = 0, isArrayItem = false) {
+    const spaces = '  '.repeat(indent);
+    let yaml = '';
+
+    const entries = Object.entries(obj);
+    for (let i = 0; i < entries.length; i++) {
+      const [key, value] = entries[i];
+      const prefix = (i === 0 && isArrayItem) ? '' : spaces;
+
+      if (value === null || value === undefined) {
+        yaml += `${prefix}${key}: null\n`;
+      } else if (Array.isArray(value)) {
+        if (value.length === 0) {
+          yaml += `${prefix}${key}: []\n`;
+        } else {
+          yaml += `${prefix}${key}:\n`;
+          for (const item of value) {
+            if (typeof item === 'object' && item !== null) {
+              yaml += `${spaces}  - `;
+              yaml += this._toYaml(item, indent + 2, true);
+            } else {
+              yaml += `${spaces}  - ${this._yamlValue(item)}\n`;
+            }
+          }
+        }
+      } else if (typeof value === 'object') {
+        yaml += `${prefix}${key}:\n`;
+        yaml += this._toYaml(value, indent + 1);
+      } else {
+        yaml += `${prefix}${key}: ${this._yamlValue(value)}\n`;
+      }
+    }
+
+    return yaml;
+  }
+
+  /**
+   * Format value for YAML
+   * @private
+   */
+  _yamlValue(value) {
+    if (typeof value === 'string') {
+      // Quote strings that need it
+      if (value === '' || 
+          value.includes(':') || 
+          value.includes('#') || 
+          value.includes('\n') ||
+          value.startsWith(' ') ||
+          value.endsWith(' ') ||
+          /^[0-9]/.test(value) ||
+          ['true', 'false', 'null', 'yes', 'no'].includes(value.toLowerCase())) {
+        return `"${value.replace(/"/g, '\\"')}"`;
+      }
+      return value;
+    }
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    if (typeof value === 'number') return String(value);
+    return String(value);
+  }
+
+  /**
+   * Generate Swagger 2.0 YAML string
+   * @returns {string} Swagger 2.0 YAML string
+   */
+  toSwagger2Yaml() {
+    const spec = this._buildSwagger2Spec();
+    return this._toYaml(spec);
+  }
+
+  /**
+   * Generate Swagger 2.0 JSON object
+   * @returns {Object} Swagger 2.0 spec object
+   */
+  toSwagger2() {
+    return this._buildSwagger2Spec();
+  }
+
+  /**
+   * Generate Swagger 2.0 JSON string
+   * @param {number} indent - JSON indentation (default: 2)
+   * @returns {string} JSON string
+   */
+  toSwagger2Json(indent = 2) {
+    return JSON.stringify(this._buildSwagger2Spec(), null, indent);
+  }
+
+  /**
+   * Build Swagger 2.0 spec
+   * @private
+   */
+  _buildSwagger2Spec() {
+    const spec = {
+      swagger: '2.0',
+      info: {
+        title: this.options.title,
+        version: this.options.version,
+        description: this.options.description || 'API generated from Glossify annotations'
+      },
+      host: 'localhost:3000',
+      basePath: '/',
+      schemes: ['http'],
+      consumes: ['application/json'],
+      produces: ['application/json'],
+      tags: this.controllers.map(c => ({ name: c.name, description: `${c.name} operations` })),
+      paths: {},
+      definitions: {}
+    };
+
+    for (const controller of this.controllers) {
+      for (const route of controller.routes) {
+        // Convert :param to {param} for Swagger
+        const pathKey = route.path.replace(/:(\w+)/g, '{$1}');
+
+        if (!spec.paths[pathKey]) {
+          spec.paths[pathKey] = {};
+        }
+
+        const operation = {
+          tags: [controller.name],
+          summary: route.description,
+          operationId: this._generateOperationId(route.method, route.path),
+          parameters: [],
+          responses: {}
+        };
+
+        // Add path/query parameters
+        for (const p of route.params) {
+          operation.parameters.push({
+            name: p.name,
+            in: p.in,
+            description: p.description,
+            required: p.in === 'path',
+            type: 'string'
+          });
+        }
+
+        // Add request body as parameter (Swagger 2.0 style)
+        if (route.body) {
+          try {
+            const bodySchema = JSON.parse(route.body);
+            operation.parameters.push({
+              name: 'body',
+              in: 'body',
+              description: 'Request body',
+              required: true,
+              schema: this._inferSchema(bodySchema)
+            });
+          } catch {
+            operation.parameters.push({
+              name: 'body',
+              in: 'body',
+              description: 'Request body',
+              required: true,
+              schema: { type: 'object' }
+            });
+          }
+        }
+
+        // Build responses
+        for (const res of route.responses) {
+          operation.responses[res.status] = {
+            description: this._getStatusDescription(res.status)
+          };
+          
+          if (res.example && res.example !== 'null') {
+            try {
+              const parsed = JSON.parse(res.example);
+              operation.responses[res.status].schema = this._inferSchema(parsed);
+              operation.responses[res.status].examples = {
+                'application/json': parsed
+              };
+            } catch {
+              operation.responses[res.status].schema = { type: 'string' };
+            }
+          }
+        }
+
+        // Ensure at least a default response
+        if (Object.keys(operation.responses).length === 0) {
+          operation.responses['200'] = { description: 'Successful response' };
+        }
+
+        spec.paths[pathKey][route.method.toLowerCase()] = operation;
+      }
+    }
+
+    return spec;
+  }
+
+  /**
    * Get all routes as flat array
    * @returns {Array} All routes with controller info
    */

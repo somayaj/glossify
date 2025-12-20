@@ -1,0 +1,239 @@
+openapi: "3.0.3"
+info:
+  title: Glossify Example API
+  version: "1.0.0"
+  description: API generated from Glossify annotations
+servers:
+  - url: "http://localhost:3000"
+    description: Local development server
+tags:
+  - name: UserController
+    description: UserController operations
+  - name: ProductController
+    description: ProductController operations
+paths:
+  /users:
+    get:
+      tags:
+        - UserController
+      summary: Get all users from the database
+      operationId: listUsers
+      parameters: []
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+              example:
+                - id: 1
+                  name: John
+                - id: 2
+                  name: Jane
+    post:
+      tags:
+        - UserController
+      summary: Create a new user
+      operationId: createUsers
+      parameters: []
+      responses:
+        201:
+          description: Resource created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  message:
+                    type: string
+              example:
+                id: 3
+                name: New User
+                message: User created successfully
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+            example:
+              name: string
+              email: string
+              password: string
+  /users/{id}:
+    get:
+      tags:
+        - UserController
+      summary: Get a specific user by ID
+      operationId: getUsers
+      parameters:
+        - name: id
+          in: path
+          description: The user's unique identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  email:
+                    type: string
+              example:
+                id: 1
+                name: John
+                email: john@example.com
+    put:
+      tags:
+        - UserController
+      summary: Update an existing user
+      operationId: updateUsers
+      parameters:
+        - name: id
+          in: path
+          description: The user's unique identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: User updated successfully
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+            example:
+              name: string
+              email: string
+    delete:
+      tags:
+        - UserController
+      summary: Delete a user
+      operationId: deleteUsers
+      parameters:
+        - name: id
+          in: path
+          description: The user's unique identifier
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: No content
+  /products:
+    get:
+      tags:
+        - ProductController
+      summary: List all products
+      operationId: listProducts
+      parameters:
+        - name: limit
+          in: path
+          description: Number of items to return
+          required: true
+          schema:
+            type: string
+        - name: offset
+          in: path
+          description: Pagination offset
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of items to return
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          description: Pagination offset
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                  total:
+                    type: integer
+              example:
+                products: []
+                total: 0
+  /products/{id}:
+    get:
+      tags:
+        - ProductController
+      summary: Get product details
+      operationId: getProducts
+      parameters: []
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  price:
+                    type: number
+              example:
+                id: 1
+                name: Widget
+                price: 9.99
+components:
+  schemas:

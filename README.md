@@ -136,6 +136,12 @@ const markdown = generator.toMarkdown();
 // Generate OpenAPI 3.0 spec
 const openapi = generator.toOpenAPI();
 const openapiJson = generator.toOpenAPIJson();
+const openapiYaml = generator.toOpenAPIYaml();
+
+// Generate Swagger 2.0 spec (legacy compatibility)
+const swagger = generator.toSwagger2();
+const swaggerJson = generator.toSwagger2Json();
+const swaggerYaml = generator.toSwagger2Yaml();
 
 // Get summary
 const summary = generator.getSummary();
@@ -382,8 +388,14 @@ const docs = createDocs(source, {
 // Save Markdown docs
 fs.writeFileSync('./API.md', docs.toMarkdown());
 
-// Save OpenAPI spec
+// Save OpenAPI spec (JSON)
 fs.writeFileSync('./openapi.json', docs.toOpenAPIJson());
+
+// Save OpenAPI spec (YAML)
+fs.writeFileSync('./openapi.yaml', docs.toOpenAPIYaml());
+
+// Save Swagger 2.0 spec (for legacy tools)
+fs.writeFileSync('./swagger.yaml', docs.toSwagger2Yaml());
 
 console.log(docs.getSummary());
 ```
